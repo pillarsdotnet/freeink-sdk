@@ -6,13 +6,6 @@
 #include "../lut/Uc8253X3Luts.h"
 #include "../lut/UltraChipDirectGrayLuts.h"
 
-// Opt-in conservative source-drive voltage for the X3 panel. Only consulted when
-// FREEINK_X3_SAFE_VOLTAGES is defined (see CMD_POWER_SETTING in initController).
-// Vendor default is 0x3F; lower values reduce source drive (gentler, weaker).
-#if defined(FREEINK_X3_SAFE_VOLTAGES) && !defined(FREEINK_X3_SAFE_VDH_VDL)
-#define FREEINK_X3_SAFE_VDH_VDL 0x30
-#endif
-
 namespace freeink {
 namespace {
 // UC8253 command set.
@@ -138,22 +131,14 @@ void Uc8253X3Driver::initController(EpdBus& bus) {
   bus.cmd(CMD_POWER_SETTING);
   bus.data(0x07);
   bus.data(0x17);
-#ifdef FREEINK_X3_SAFE_VOLTAGES
-  // Conservative-voltage safety mode (opt-in; build with -DFREEINK_X3_SAFE_VOLTAGES).
-  // Lowers ONLY the source drive (VDH/VDL) below the vendor 0x3F to reduce
-  // electrical stress on the panel's source drivers. Gate voltages (byte1),
-  // VDHR (byte4) and VCOM (CMD_VCOM_DC) are left at vendor values so DC balance
-  // is preserved — a wrong VCOM would cause DC imbalance, which harms panel life.
-  // This can only UNDER-drive (weaker contrast / more ghosting); it never raises
-  // a voltage above the vendor value, so it cannot over-stress the panel.
-  // Tune FREEINK_X3_SAFE_VDH_VDL (vendor 0x3F, lower = gentler) to trade contrast
-  // for stress. This is insurance for suspect panels, not a known fix.
-  bus.data(FREEINK_X3_SAFE_VDH_VDL);  // VDH (vendor 0x3F)
-  bus.data(FREEINK_X3_SAFE_VDH_VDL);  // VDL (vendor 0x3F)
-#else
-  bus.data(0x3F);  // VDH
-  bus.data(0x3F);  // VDL
-#endif
+  // Source drive (VDH/VDL). Defaults to the vendor 0x3F (full drive). A lower
+  // runtime level under-drives ONLY VDH/VDL to reduce electrical stress on the
+  // panel's source drivers (gentler, but weaker contrast / more ghosting). Gate
+  // voltages (byte1), VDHR (byte4) and VCOM (CMD_VCOM_DC) stay at vendor values
+  // so DC balance — which governs panel life — is preserved. setSourceDriveLevel()
+  // clamps to <= 0x3F, so this can only UNDER-drive, never over-stress the panel.
+  bus.data(_sourceDriveLevel);  // VDH
+  bus.data(_sourceDriveLevel);  // VDL
   bus.data(0x17);
   bus.cmd(CMD_VCOM_DC);
   bus.data(0x24);

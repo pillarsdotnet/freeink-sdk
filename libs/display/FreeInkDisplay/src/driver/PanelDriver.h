@@ -45,6 +45,11 @@ class PanelDriver {
   // bring up its EpdBus — the driver owns the panel end to end.
   virtual bool usesExternalBus() const { return false; }
 
+  // Optional source-drive (VDH/VDL) tuning, consumed by the driver at its next
+  // begin(). Only the UC8253-X3 driver implements this; the value can only
+  // under-drive the panel (gentler, weaker), never over-stress it. No-op default.
+  virtual void setSourceDriveLevel(uint8_t /*vdhVdl*/) {}
+
   // --- lifecycle ---
   virtual void begin(EpdBus& bus) = 0;
   virtual void deepSleep(EpdBus& bus) = 0;

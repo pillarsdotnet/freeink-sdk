@@ -279,6 +279,10 @@ void FreeInkDisplay::begin() {
   if (!frameBuffer1) frameBuffer1 = allocFrameBufferStorage();
 #endif
 
+  // Push the configured source-drive level into the driver before its begin()
+  // programs POWER_SETTING (no-op on non-X3 drivers). Latches at POWER_ON.
+  _driver->setSourceDriveLevel(_x3SourceDriveLevel);
+
   frameBuffer = frameBuffer0;
   if (frameBuffer0) memset(frameBuffer0, 0xFF, bufferSize);
 #ifndef EINK_DISPLAY_SINGLE_BUFFER_MODE

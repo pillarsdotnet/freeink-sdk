@@ -37,6 +37,12 @@ class FreeInkDisplay {
   void setDisplayX3();
   void setDisplayM5PaperColor();
 
+  // X3 source-drive (VDH/VDL) level, applied to the driver at begin(). Vendor
+  // default 0x3F (full drive); lower values under-drive only VDH/VDL (gentler,
+  // weaker) and are clamped to <= 0x3F by the driver. No effect on non-X3 panels.
+  // Call before begin() (voltages latch at POWER_ON).
+  void setX3SourceDriveLevel(uint8_t vdhVdl) { _x3SourceDriveLevel = vdhVdl; }
+
   // M5 PaperColor: run the next refresh's OTP waveform to completion (one-shot).
   void requestCompleteWaveformNextRefresh();
 
@@ -416,6 +422,7 @@ class FreeInkDisplay {
 
   EpdBus _bus;
   PanelDriver* _driver = nullptr;
+  uint8_t _x3SourceDriveLevel = 0x3F;  // vendor full drive; applied at begin()
 
   // Async refresh state: pending flag + (single-buffer mode) a lazily
   // allocated shadow of the last-displayed frame, used as the differential

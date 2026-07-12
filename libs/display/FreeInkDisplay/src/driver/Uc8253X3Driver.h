@@ -90,6 +90,13 @@ class Uc8253X3Driver : public PanelDriver {
   void requestResync(uint8_t settlePasses) override;
   void skipInitialResync() override;
 
+  // Source-drive (VDH/VDL) level applied at initController(). Clamped to the
+  // vendor maximum 0x3F so it can only under-drive (gentler), never over-stress.
+  // Takes effect on the next begin()/initController() (voltages latch at POWER_ON).
+  void setSourceDriveLevel(uint8_t vdhVdl) override {
+    _sourceDriveLevel = vdhVdl > 0x3F ? 0x3F : vdhVdl;
+  }
+
 private:
   void initController(EpdBus &bus);
   void loadBank(EpdBus &bus, const Uc8253LutBank &bank);
@@ -114,6 +121,7 @@ private:
   uint8_t _initialFullSyncsRemaining = 0;
   bool _forceFullSyncNext = false;
   uint8_t _forcedConditionPassesNext = 0;
+  uint8_t _sourceDriveLevel = 0x3F;  // vendor full drive until set otherwise
   struct GrayState {
     bool lastBaseWasPartial = false;
     bool lsbValid = false;
